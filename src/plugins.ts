@@ -116,12 +116,43 @@ function splitArguments(argsStr: string): string[] {
 }
 
 /**
+ * Check if a position is inside a comment
+ */
+function isInsideComment(content: string, position: number): boolean {
+	// Find the start of the current line
+	const lineStart = content.lastIndexOf("\n", position - 1) + 1;
+	const beforeOnLine = content.slice(lineStart, position);
+
+	// Check for single-line comment
+	if (beforeOnLine.includes("//")) {
+		return true;
+	}
+
+	// Check for block comment - find last /* and */ before position
+	const beforePos = content.slice(0, position);
+	const lastBlockStart = beforePos.lastIndexOf("/*");
+	const lastBlockEnd = beforePos.lastIndexOf("*/");
+
+	// If /* is after */ (or no */), we're inside a block comment
+	if (lastBlockStart !== -1 && lastBlockStart > lastBlockEnd) {
+		return true;
+	}
+
+	return false;
+}
+
+/**
  * Find the variable name for a $persist call (works for both let/const and class properties)
  */
 function findVarName(
 	content: string,
 	persistStart: number,
 ): { varName: string; isClassProperty: boolean } | null {
+	// Skip if inside a comment
+	if (isInsideComment(content, persistStart)) {
+		return null;
+	}
+
 	// Look backwards from $persist to find the assignment
 	const before = content.slice(0, persistStart);
 
