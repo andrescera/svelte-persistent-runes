@@ -1,6 +1,7 @@
 # The MIT License (MIT)
 
 Copyright (c) 2024 [MacFJA](https://github.com/MacFJA)
+Copyright (c) 2025 [andrescera](https://github.com/andrescera)
 
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the "Software"), to deal

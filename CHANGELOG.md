@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0]
+
+### Changed
+
+- **BREAKING**: Package renamed from `@macfja/svelte-persistent-runes` to `svelte-persistent-runes`
+- **BREAKING**: Complete rewrite of preprocessor using `magic-string` instead of `ts-morph`
+- Modernized tsconfig for ESM (NodeNext, ES2022)
+- Internal import alias changed from `dyn___persistent_runes` to `__persist`
+
+### Fixed
+
+- Sourcemap warning: "Sourcemap is likely to be incorrect: a plugin was used to transform files, but didn't generate a sourcemap"
+- Proper sourcemap generation with hires column mappings
+
+### Removed
+
+- Removed `ts-morph` dependency (heavy TypeScript compiler)
+- Removed `source-map` dependency (manual sourcemap generation)
+
+### Added
+
+- Added `magic-string` for simpler transforms with automatic sourcemap generation
+
 ## [1.1.0]
 
 ### Fixed
@@ -23,14 +46,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
-- Deprecate the default import of `@macfja/svelte-persistent-runes/preprocessor`
+- Deprecate the default import of `svelte-persistent-runes/preprocessor`
 
 ## [1.0.0]
 
 First version
 
-[unreleased]: https://github.com/MacFJA/svelte-persistent-runes/compare/1.0.0...HEAD
-[1.1.0]: https://github.com/MacFJA/svelte-persistent-runes/compare/1.0.0...1.1.0
-[1.0.0]: https://github.com/MacFJA/svelte-persistent-runes/releases/tag/1.0.0
+[unreleased]: https://github.com/andrescera/svelte-persistent-runes/compare/2.0.0...HEAD
+[2.0.0]: https://github.com/andrescera/svelte-persistent-runes/compare/1.1.0...2.0.0
+[1.1.0]: https://github.com/andrescera/svelte-persistent-runes/compare/1.0.0...1.1.0
+[1.0.0]: https://github.com/andrescera/svelte-persistent-runes/releases/tag/1.0.0
 
 [Issue#2]: https://github.com/MacFJA/svelte-persistent-runes/issues/2
