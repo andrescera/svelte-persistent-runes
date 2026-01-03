@@ -13,7 +13,8 @@ type PersistMatch = {
 };
 
 const PERSIST_CALL_REGEX = /\$persist\s*\(/g;
-const IMPORT_STATEMENT = 'import * as __persist from "svelte-persistent-runes";\n';
+const IMPORT_STATEMENT =
+	'import * as __persist from "svelte-persistent-runes";\n';
 
 /**
  * Find the matching closing parenthesis for a $persist call
@@ -143,35 +144,32 @@ function findVarName(
  */
 function findPersistCalls(content: string): PersistMatch[] {
 	const matches: PersistMatch[] = [];
-	let match: RegExpExecArray | null;
-
 	PERSIST_CALL_REGEX.lastIndex = 0;
 
-	while ((match = PERSIST_CALL_REGEX.exec(content)) !== null) {
+	let match = PERSIST_CALL_REGEX.exec(content);
+	while (match !== null) {
 		const callStart = match.index;
 		const argsStart = callStart + match[0].length;
 		const argsEnd = findMatchingParen(content, argsStart);
 		const argsStr = content.slice(argsStart, argsEnd - 1);
 		const args = splitArguments(argsStr);
 
-		if (args.length < 2) {
-			continue;
+		if (args.length >= 2) {
+			const varInfo = findVarName(content, callStart);
+			if (varInfo) {
+				matches.push({
+					start: callStart,
+					end: argsEnd,
+					varName: varInfo.varName,
+					initial: args[0],
+					key: args[1],
+					options: args[2] || "undefined",
+					isClassProperty: varInfo.isClassProperty,
+				});
+			}
 		}
 
-		const varInfo = findVarName(content, callStart);
-		if (!varInfo) {
-			continue;
-		}
-
-		matches.push({
-			start: callStart,
-			end: argsEnd,
-			varName: varInfo.varName,
-			initial: args[0],
-			key: args[1],
-			options: args[2] || "undefined",
-			isClassProperty: varInfo.isClassProperty,
-		});
+		match = PERSIST_CALL_REGEX.exec(content);
 	}
 
 	return matches;
@@ -221,10 +219,9 @@ function transformContent(
 			const classNameMatch = beforeMatch.match(/class\s+(\w+)[^{]*\{[^}]*$/);
 			if (classNameMatch) {
 				const className = classNameMatch[1];
-				if (!classMatches.has(className)) {
-					classMatches.set(className, []);
-				}
-				classMatches.get(className)!.push(match);
+				const existing = classMatches.get(className) ?? [];
+				existing.push(match);
+				classMatches.set(className, existing);
 			}
 		} else {
 			varMatches.push(match);
@@ -300,7 +297,9 @@ function transformContent(
 			version: map.version,
 			file: map.file ?? filename,
 			sources: map.sources,
-			sourcesContent: map.sourcesContent?.filter((s): s is string => s !== null),
+			sourcesContent: map.sourcesContent?.filter(
+				(s): s is string => s !== null,
+			),
 			names: map.names,
 			mappings: map.mappings,
 		},

@@ -12,14 +12,23 @@
 		"enabled": true,
 		"indentStyle": "tab"
 	},
-	"organizeImports": {
-		"enabled": true
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": {
+					"level": "on"
+				}
+			}
+		}
 	},
 	"linter": {
 		"enabled": true,
 		"rules": {
 			"recommended": true,
-			"correctness": { "noUnusedImports": "error" }
+			"correctness": {
+				"noUnusedImports": "error"
+			}
 		}
 	},
 	"javascript": {

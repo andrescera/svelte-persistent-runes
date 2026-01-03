@@ -3,11 +3,11 @@ import {
 	get as getCookie,
 	set as setCookie,
 } from "browser-cookies";
-// @ts-ignore
+// @ts-expect-error
 import toHex from "sjcl-codec-hex/from-bits";
-// @ts-ignore
+// @ts-expect-error
 import fromHex from "sjcl-codec-hex/to-bits";
-// @ts-ignore
+// @ts-expect-error
 import sjcl from "sjcl-es";
 import * as superjson from "superjson";
 import type { PersistentRunesOptions } from "./index";

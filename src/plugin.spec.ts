@@ -55,9 +55,15 @@ test("Transform class", async (t: ExecutionContext) => {
 		markup: "",
 	});
 
-	t.truthy(actual?.code?.includes('$state(__persist.load'), "Should transform $persist to $state");
-	t.truthy(actual?.code?.includes('$effect.root'), "Should add effect root");
-	t.truthy(actual?.code?.includes('__persist.save'), "Should save state changes");
+	t.truthy(
+		actual?.code?.includes("$state(__persist.load"),
+		"Should transform $persist to $state",
+	);
+	t.truthy(actual?.code?.includes("$effect.root"), "Should add effect root");
+	t.truthy(
+		actual?.code?.includes("__persist.save"),
+		"Should save state changes",
+	);
 	t.truthy(actual?.map, "Should generate a sourcemap");
 });
 
@@ -73,10 +79,22 @@ test("Transform class with several props", async (t: ExecutionContext) => {
 		markup: "",
 	});
 
-	t.truthy(actual?.code?.includes("__persist.load('name'"), "Should transform name property");
-	t.truthy(actual?.code?.includes("__persist.load('user-age'"), "Should transform age property");
-	t.truthy(actual?.code?.includes("__persist.save('name'"), "Should save name changes");
-	t.truthy(actual?.code?.includes("__persist.save('user-age'"), "Should save age changes");
+	t.truthy(
+		actual?.code?.includes("__persist.load('name'"),
+		"Should transform name property",
+	);
+	t.truthy(
+		actual?.code?.includes("__persist.load('user-age'"),
+		"Should transform age property",
+	);
+	t.truthy(
+		actual?.code?.includes("__persist.save('name'"),
+		"Should save name changes",
+	);
+	t.truthy(
+		actual?.code?.includes("__persist.save('user-age'"),
+		"Should save age changes",
+	);
 	t.truthy(actual?.map, "Should generate a sourcemap");
 });
 
@@ -89,9 +107,15 @@ test("Transform class with parent", async (t: ExecutionContext) => {
 		markup: "",
 	});
 
-	t.truthy(actual?.code?.includes('extends Base'), "Should preserve extends");
-	t.truthy(actual?.code?.includes('super('), "Should call super in constructor");
-	t.truthy(actual?.code?.includes('$state(__persist.load'), "Should transform $persist");
+	t.truthy(actual?.code?.includes("extends Base"), "Should preserve extends");
+	t.truthy(
+		actual?.code?.includes("super("),
+		"Should call super in constructor",
+	);
+	t.truthy(
+		actual?.code?.includes("$state(__persist.load"),
+		"Should transform $persist",
+	);
 	t.truthy(actual?.map, "Should generate a sourcemap");
 });
 
@@ -105,8 +129,14 @@ test("Transform class with constructor", async (t: ExecutionContext) => {
 		markup: "",
 	});
 
-	t.truthy(actual?.code?.includes('console.log'), "Should preserve constructor body");
-	t.truthy(actual?.code?.includes('$effect.root'), "Should add effect root in constructor");
+	t.truthy(
+		actual?.code?.includes("console.log"),
+		"Should preserve constructor body",
+	);
+	t.truthy(
+		actual?.code?.includes("$effect.root"),
+		"Should add effect root in constructor",
+	);
 	t.truthy(actual?.map, "Should generate a sourcemap");
 });
 
@@ -132,9 +162,13 @@ test("Sourcemap is valid", async (t: ExecutionContext) => {
 	});
 
 	t.truthy(actual?.map, "Should have a map");
-	
+
 	// Check that the map is a valid object with required properties
-	const map = actual?.map as { version?: number; sources?: string[]; mappings?: string };
+	const map = actual?.map as {
+		version?: number;
+		sources?: string[];
+		mappings?: string;
+	};
 	t.is(map?.version, 3, "Should be sourcemap v3");
 	t.truthy(map?.sources?.includes("test.js"), "Should reference source file");
 	t.truthy(map?.mappings, "Should have mappings");
