@@ -1,15 +1,15 @@
 {
-	"name": "@macfja/svelte-persistent-runes",
-	"version": "1.1.0",
+	"name": "svelte-persistent-runes",
+	"version": "2.0.0",
 	"description": "A Svelte reactive rune that keep its value through pages and reloads",
 	"license": "MIT",
-	"author": "MacFJA",
-	"homepage": "https://github.com/MacFJA/svelte-persistent-runes",
+	"author": "andrescera",
+	"homepage": "https://github.com/andrescera/svelte-persistent-runes",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/MacFJA/svelte-persistent-runes"
+		"url": "https://github.com/andrescera/svelte-persistent-runes"
 	},
-	"bugs": "https://github.com/MacFJA/svelte-persistent-runes/issues",
+	"bugs": "https://github.com/andrescera/svelte-persistent-runes/issues",
 	"type": "module",
 	"exports": {
 		".": {
