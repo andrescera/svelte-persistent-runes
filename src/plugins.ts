@@ -1,57 +1,318 @@
-import { type Position, SourceMapGenerator } from "source-map";
+import MagicString from "magic-string";
 import type { PreprocessorGroup, Processed } from "svelte/compiler";
-import {
-	Block,
-	CallExpression,
-	ClassDeclaration,
-	Identifier,
-	type Node,
-	type OptionalKind,
-	type ParameterDeclarationStructure,
-	Project,
-	StructureKind,
-	SyntaxKind,
-	VariableDeclaration,
-} from "ts-morph";
 import type { Plugin } from "vite";
 
-type ToTrackData = {
-	varname: string;
+type PersistMatch = {
+	start: number;
+	end: number;
+	varName: string;
+	initial: string;
 	key: string;
 	options: string;
+	isClassProperty: boolean;
 };
-type PositionSize = Position & {
-	lines: number;
-};
-type AddMapping = (
-	original: PositionSize | undefined,
-	generated: PositionSize,
-) => void;
+
+const PERSIST_CALL_REGEX = /\$persist\s*\(/g;
+const IMPORT_STATEMENT = 'import * as __persist from "svelte-persistent-runes";\n';
+
+/**
+ * Find the matching closing parenthesis for a $persist call
+ */
+function findMatchingParen(content: string, start: number): number {
+	let depth = 1;
+	let i = start;
+	let inString: string | null = null;
+	let escaped = false;
+
+	while (i < content.length && depth > 0) {
+		const char = content[i];
+
+		if (escaped) {
+			escaped = false;
+			i++;
+			continue;
+		}
+
+		if (char === "\\") {
+			escaped = true;
+			i++;
+			continue;
+		}
+
+		if (inString) {
+			if (char === inString) {
+				inString = null;
+			}
+		} else {
+			if (char === '"' || char === "'" || char === "`") {
+				inString = char;
+			} else if (char === "(") {
+				depth++;
+			} else if (char === ")") {
+				depth--;
+			}
+		}
+		i++;
+	}
+
+	return i;
+}
+
+/**
+ * Split arguments respecting nested structures
+ */
+function splitArguments(argsStr: string): string[] {
+	const args: string[] = [];
+	let current = "";
+	let depth = 0;
+	let inString: string | null = null;
+	let escaped = false;
+
+	for (let i = 0; i < argsStr.length; i++) {
+		const char = argsStr[i];
+
+		if (escaped) {
+			escaped = false;
+			current += char;
+			continue;
+		}
+
+		if (char === "\\") {
+			escaped = true;
+			current += char;
+			continue;
+		}
+
+		if (inString) {
+			current += char;
+			if (char === inString) {
+				inString = null;
+			}
+		} else {
+			if (char === '"' || char === "'" || char === "`") {
+				inString = char;
+				current += char;
+			} else if (char === "(" || char === "[" || char === "{") {
+				depth++;
+				current += char;
+			} else if (char === ")" || char === "]" || char === "}") {
+				depth--;
+				current += char;
+			} else if (char === "," && depth === 0) {
+				args.push(current.trim());
+				current = "";
+			} else {
+				current += char;
+			}
+		}
+	}
+
+	if (current.trim()) {
+		args.push(current.trim());
+	}
+
+	return args;
+}
+
+/**
+ * Find the variable name for a $persist call (works for both let/const and class properties)
+ */
+function findVarName(
+	content: string,
+	persistStart: number,
+): { varName: string; isClassProperty: boolean } | null {
+	// Look backwards from $persist to find the assignment
+	const before = content.slice(0, persistStart);
+	
+	// Match: varName = (potentially with let/const/var before it)
+	const assignMatch = before.match(
+		/(?:(?:let|const|var)\s+)?(\w+)\s*=\s*$/,
+	);
+	if (assignMatch) {
+		// Check if this is a class property by looking for class context
+		const classMatch = before.match(/class\s+\w+[^{]*\{[^}]*$/);
+		return {
+			varName: assignMatch[1],
+			isClassProperty: !!classMatch,
+		};
+	}
+
+	return null;
+}
+
+/**
+ * Find all $persist calls in the content
+ */
+function findPersistCalls(content: string): PersistMatch[] {
+	const matches: PersistMatch[] = [];
+	let match: RegExpExecArray | null;
+
+	PERSIST_CALL_REGEX.lastIndex = 0;
+
+	while ((match = PERSIST_CALL_REGEX.exec(content)) !== null) {
+		const callStart = match.index;
+		const argsStart = callStart + match[0].length;
+		const argsEnd = findMatchingParen(content, argsStart);
+		const argsStr = content.slice(argsStart, argsEnd - 1);
+		const args = splitArguments(argsStr);
+
+		if (args.length < 2) {
+			continue;
+		}
+
+		const varInfo = findVarName(content, callStart);
+		if (!varInfo) {
+			continue;
+		}
+
+		matches.push({
+			start: callStart,
+			end: argsEnd,
+			varName: varInfo.varName,
+			initial: args[0],
+			key: args[1],
+			options: args[2] || "undefined",
+			isClassProperty: varInfo.isClassProperty,
+		});
+	}
+
+	return matches;
+}
+
+/**
+ * Transform the content by replacing $persist calls
+ */
+function transformContent(
+	content: string,
+	filename: string,
+): { code: string; map: ReturnType<MagicString["generateMap"]> } | null {
+	if (!content.includes("$persist")) {
+		return null;
+	}
+
+	const matches = findPersistCalls(content);
+	if (matches.length === 0) {
+		return null;
+	}
+
+	const s = new MagicString(content);
+
+	// Add import at the beginning
+	s.prepend(IMPORT_STATEMENT);
+
+	// Group matches by class vs non-class
+	const classMatches: Map<string, PersistMatch[]> = new Map();
+	const varMatches: PersistMatch[] = [];
+
+	for (const match of matches) {
+		if (match.isClassProperty) {
+			// Try to find which class this belongs to
+			const beforeMatch = content.slice(0, match.start);
+			const classNameMatch = beforeMatch.match(/class\s+(\w+)[^{]*\{[^}]*$/);
+			if (classNameMatch) {
+				const className = classNameMatch[1];
+				if (!classMatches.has(className)) {
+					classMatches.set(className, []);
+				}
+				classMatches.get(className)!.push(match);
+			}
+		} else {
+			varMatches.push(match);
+		}
+
+		// Replace $persist(...) with $state(__persist.load(...) ?? initial)
+		const replacement = `$state(__persist.load(${match.key}, ${match.options}) ?? ${match.initial})`;
+		s.overwrite(match.start, match.end, replacement);
+	}
+
+	// Add effects for variable declarations
+	if (varMatches.length > 0) {
+		const effects = varMatches
+			.map(
+				(m) =>
+					`$effect(() => __persist.save(${m.key}, $state.snapshot(${m.varName}), ${m.options}));`,
+			)
+			.join("\n");
+		s.append(`\n$effect.root(() => {\n${effects}\n});\n`);
+	}
+
+	// For class properties, we need to find constructors and add effects there
+	// This is more complex - for now we'll add a note that classes need manual handling
+	// or we can inject into existing constructors
+	for (const [className, classProps] of classMatches) {
+		// Find the class and its constructor
+		const classRegex = new RegExp(
+			`class\\s+${className}(?:\\s+extends\\s+\\w+)?\\s*\\{`,
+		);
+		const classMatch = classRegex.exec(content);
+
+		if (classMatch) {
+			const classStart = classMatch.index + classMatch[0].length;
+			const constructorMatch = content
+				.slice(classStart)
+				.match(/constructor\s*\([^)]*\)\s*\{/);
+
+			const effects = classProps
+				.map(
+					(m) =>
+						`$effect(() => __persist.save(${m.key}, $state.snapshot(this.${m.varName}), ${m.options}));`,
+				)
+				.join("\n");
+			const effectBlock = `$effect.root(() => {\n${effects}\n});`;
+
+			if (constructorMatch) {
+				// Add to existing constructor
+				const constructorBodyStart =
+					classStart + constructorMatch.index + constructorMatch[0].length;
+				s.appendLeft(constructorBodyStart, `\n${effectBlock}\n`);
+			} else {
+				// Need to add a constructor
+				// Check if class extends something
+				const extendsMatch = content
+					.slice(classMatch.index)
+					.match(/class\s+\w+\s+extends\s+(\w+)/);
+				const superCall = extendsMatch ? "super(...args);\n" : "";
+				const constructorParams = extendsMatch ? "...args: any[]" : "";
+				const newConstructor = `\nconstructor(${constructorParams}) {\n${superCall}${effectBlock}\n}\n`;
+				s.appendLeft(classStart, newConstructor);
+			}
+		}
+	}
+
+	return {
+		code: s.toString(),
+		map: s.generateMap({
+			source: filename,
+			file: filename,
+			includeContent: true,
+			hires: true,
+		}),
+	};
+}
 
 export function persistPlugin(): Plugin {
 	const preprocess = persistPreprocessor();
 	return {
-		name: "macfja-svelte-persistent-runes",
-		transform: (src: string, id: string) => {
-			if (/\.svelte\.(c|m|)[jt]s$/.test(id)) {
-				const result = preprocess.script?.({
-					content: src,
-					filename: id,
-					attributes: {},
-					markup: "",
-				}) as Processed;
-				if (!result) {
-					return {
-						code: src,
-					};
-				}
-				return {
-					code: result.code,
-					map: result.map as string,
-				};
+		name: "svelte-persistent-runes",
+		transform(src: string, id: string) {
+			if (!/\.svelte\.(c|m)?[jt]s$/.test(id)) {
+				return null;
 			}
+
+			const result = preprocess.script?.({
+				content: src,
+				filename: id,
+				attributes: {},
+				markup: "",
+			}) as Processed | undefined;
+
+			if (!result || result.code === src) {
+				return null;
+			}
+
 			return {
-				code: src,
+				code: result.code,
+				map: result.map,
 			};
 		},
 	};
@@ -59,264 +320,18 @@ export function persistPlugin(): Plugin {
 
 export function persistPreprocessor(): PreprocessorGroup {
 	return {
-		script: ({ content, filename }) => {
-			if (content.indexOf("$persist") === -1) {
-				return {
-					code: content,
-				};
+		name: "svelte-persistent-runes",
+		script({ content, filename = "unknown.js" }) {
+			const result = transformContent(content, filename);
+
+			if (!result) {
+				return { code: content };
 			}
 
-			const sourceMap = new SourceMapGenerator({
-				file: filename,
-			});
-			sourceMap.setSourceContent(filename ?? "tmp.js", content);
-			let addLines = 0;
-			const project = new Project({
-				skipAddingFilesFromTsConfig: true,
-				skipFileDependencyResolution: true,
-				skipLoadingLibFiles: true,
-				useInMemoryFileSystem: true,
-			});
-
-			const sourceFile = project.createSourceFile(
-				filename ?? "tmp.js",
-				content,
-			);
-			sourceFile.addImportDeclaration({
-				kind: StructureKind.ImportDeclaration,
-				moduleSpecifier: "@macfja/svelte-persistent-runes",
-				namespaceImport: "dyn___persistent_runes",
-			});
-			addLines +=
-				sourceFile.getFullText().split("\n").length -
-				content.split("\n").length;
-			const toTrackVar: Array<ToTrackData> = [];
-			const addMapping: AddMapping = (original, generated) => {
-				if (original) {
-					sourceMap.addMapping({
-						original: {
-							column: original.column,
-							line: original.line - addLines,
-						},
-						generated: {
-							line: generated.line,
-							column: generated.column,
-						},
-						source: filename ?? "tmp.js",
-					});
-				}
-				addLines += generated.lines - (original?.lines ?? 0);
+			return {
+				code: result.code,
+				map: result.map,
 			};
-			sourceFile.forEachDescendant((node) => {
-				toTrackVar.push(...processVariable(node, addMapping));
-				processClass(node, addMapping);
-			});
-
-			if (toTrackVar.length > 0) {
-				const added = sourceFile.addStatements(
-					`$effect.root(() => {${toTrackVar
-						.map(({ varname, key, options }) => {
-							return `$effect(() => dyn___persistent_runes.save(${key}, $state.snapshot(${varname}), ${options}))`;
-						})
-						.join("\n")}});`,
-				);
-				addMapping(undefined, {
-					line: added[0].getStartLineNumber(false),
-					column: 0,
-					lines:
-						added[0].getEndLineNumber() - added[0].getStartLineNumber(false),
-				});
-			}
-			return { code: sourceFile.getFullText(), map: sourceMap.toString() };
 		},
 	};
-}
-
-function processVariable(
-	node: Node,
-	addMapping: AddMapping,
-): Array<ToTrackData> {
-	if (node.getKind() !== SyntaxKind.VariableDeclaration) {
-		return [];
-	}
-
-	if (!(node instanceof VariableDeclaration)) {
-		return [];
-	}
-
-	const left = node.getName();
-	const right = node.getInitializer();
-
-	if (right === undefined) {
-		return [];
-	}
-
-	if (
-		right.getKind() !== SyntaxKind.CallExpression ||
-		!(right instanceof CallExpression)
-	) {
-		return [];
-	}
-
-	const expression = right.getExpression();
-	if (
-		expression.getKind() !== SyntaxKind.Identifier ||
-		!(expression instanceof Identifier)
-	) {
-		return [];
-	}
-
-	if (expression.getFullText().trim() !== "$persist") {
-		return [];
-	}
-
-	if (right.getArguments().length < 2) {
-		return [];
-	}
-
-	const key = right.getArguments()[1]?.print();
-	const initial = right.getArguments()[0]?.print();
-	const options = right.getArguments()[2]?.print() ?? "undefined";
-	const varname = left;
-	const originalPos: PositionSize = {
-		line: right.getStartLineNumber(false),
-		column: right.getPos() - right.getStartLinePos(false),
-		lines: right.getEndLineNumber() - right.getStartLineNumber(false),
-	};
-	node.setInitializer((writer) =>
-		writer.write(
-			`$state(dyn___persistent_runes.load(${key}, ${options}) ?? ${initial})`,
-		),
-	);
-	const newInitializer = node.getInitializer();
-	if (newInitializer) {
-		addMapping(originalPos, {
-			line: newInitializer.getStartLineNumber(false),
-			column: newInitializer.getPos() - newInitializer.getStartLinePos(false),
-			lines:
-				newInitializer.getEndLineNumber() -
-				newInitializer.getStartLineNumber(false),
-		});
-	}
-
-	return [{ varname, key, options }];
-}
-
-function processClass(node: Node, addMapping: AddMapping): void {
-	if (
-		node.getKind() !== SyntaxKind.ClassDeclaration ||
-		!(node instanceof ClassDeclaration)
-	) {
-		return;
-	}
-
-	const properties: Array<ToTrackData> = [];
-
-	for (const content of node.getProperties()) {
-		const left = content.getName();
-		const right = content.getInitializer();
-
-		if (
-			right?.getKind() !== SyntaxKind.CallExpression ||
-			!(right instanceof CallExpression)
-		) {
-			continue;
-		}
-		const expression = right.getExpression();
-		if (
-			expression.getKind() !== SyntaxKind.Identifier ||
-			!(expression instanceof Identifier)
-		) {
-			continue;
-		}
-		if (expression.getFullText().trim() !== "$persist") {
-			continue;
-		}
-		if (right.getArguments().length < 2) {
-			continue;
-		}
-
-		const key = right.getArguments()[1].print();
-		const initial = right.getArguments()[0].print();
-		const varname = left;
-		const options = right.getArguments()[2]?.print() ?? "undefined";
-		const originalPos: PositionSize = {
-			line: right.getStartLineNumber(false),
-			column: right.getPos() - right.getStartLinePos(false),
-			lines: right.getEndLineNumber() - right.getStartLineNumber(false),
-		};
-		content.setInitializer((writer) =>
-			writer.write(
-				`$state(dyn___persistent_runes.load(${key}, ${options}) ?? ${initial})`,
-			),
-		);
-		const newInitializer = content.getInitializer();
-		if (newInitializer) {
-			addMapping(originalPos, {
-				line: newInitializer.getStartLineNumber(false),
-				column: newInitializer.getPos() - newInitializer.getStartLinePos(false),
-				lines:
-					newInitializer.getEndLineNumber() -
-					newInitializer.getStartLineNumber(false),
-			});
-		}
-
-		properties.push({ varname, key, options });
-	}
-
-	for (const content of node.getConstructors()) {
-		const body = content.getBody();
-		if (body === undefined || !(body instanceof Block)) {
-			continue;
-		}
-
-		body.addStatements(
-			`$effect.root(() => {${properties
-				.map(({ varname, key, options }) => {
-					return `$effect(() => dyn___persistent_runes.save(${key}, $state.snapshot(this.${varname}), ${options}))`;
-				})
-				.join("\n")}});`,
-		);
-		addMapping(undefined, {
-			line: body.getStartLineNumber(false),
-			column: body.getPos() - body.getStartLinePos(false),
-			lines: body.getEndLineNumber() - body.getStartLineNumber(false),
-		});
-
-		return;
-	}
-
-	const superClass = !!node.getExtends();
-
-	node.addConstructor({
-		parameters: [
-			superClass && {
-				isRestParameter: true,
-				name: "args",
-				type: "any[]",
-			},
-		].filter(Boolean) as OptionalKind<ParameterDeclarationStructure>[],
-		statements: (writer) => {
-			if (superClass) {
-				writer.writeLine("super(...args);");
-			}
-			writer.write(
-				`$effect.root(() => {${properties
-					.map(({ varname, key, options }) => {
-						return `$effect(() => dyn___persistent_runes.save(${key}, $state.snapshot(this.${varname}), ${options}))`;
-					})
-					.join("\n")}});`,
-			);
-		},
-	});
-	const newConstructor = node.getConstructors()[0];
-	addMapping(undefined, {
-		line: newConstructor.getStartLineNumber(false),
-		column: newConstructor.getPos() - newConstructor.getStartLinePos(false),
-		lines:
-			newConstructor.getEndLineNumber() -
-			newConstructor.getStartLineNumber(false),
-	});
-
-	return;
 }
