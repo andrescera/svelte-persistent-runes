@@ -123,11 +123,9 @@ function findVarName(
 ): { varName: string; isClassProperty: boolean } | null {
 	// Look backwards from $persist to find the assignment
 	const before = content.slice(0, persistStart);
-	
+
 	// Match: varName = (potentially with let/const/var before it)
-	const assignMatch = before.match(
-		/(?:(?:let|const|var)\s+)?(\w+)\s*=\s*$/,
-	);
+	const assignMatch = before.match(/(?:(?:let|const|var)\s+)?(\w+)\s*=\s*$/);
 	if (assignMatch) {
 		// Check if this is a class property by looking for class context
 		const classMatch = before.match(/class\s+\w+[^{]*\{[^}]*$/);
@@ -179,13 +177,25 @@ function findPersistCalls(content: string): PersistMatch[] {
 	return matches;
 }
 
+type TransformResult = {
+	code: string;
+	map: {
+		version: number;
+		file: string;
+		sources: string[];
+		sourcesContent?: string[];
+		names: string[];
+		mappings: string;
+	};
+};
+
 /**
  * Transform the content by replacing $persist calls
  */
 function transformContent(
 	content: string,
 	filename: string,
-): { code: string; map: ReturnType<MagicString["generateMap"]> } | null {
+): TransformResult | null {
 	if (!content.includes("$persist")) {
 		return null;
 	}
@@ -237,8 +247,6 @@ function transformContent(
 	}
 
 	// For class properties, we need to find constructors and add effects there
-	// This is more complex - for now we'll add a note that classes need manual handling
-	// or we can inject into existing constructors
 	for (const [className, classProps] of classMatches) {
 		// Find the class and its constructor
 		const classRegex = new RegExp(
@@ -260,7 +268,7 @@ function transformContent(
 				.join("\n");
 			const effectBlock = `$effect.root(() => {\n${effects}\n});`;
 
-			if (constructorMatch) {
+			if (constructorMatch && constructorMatch.index !== undefined) {
 				// Add to existing constructor
 				const constructorBodyStart =
 					classStart + constructorMatch.index + constructorMatch[0].length;
@@ -279,14 +287,23 @@ function transformContent(
 		}
 	}
 
+	const map = s.generateMap({
+		source: filename,
+		file: filename,
+		includeContent: true,
+		hires: true,
+	});
+
 	return {
 		code: s.toString(),
-		map: s.generateMap({
-			source: filename,
-			file: filename,
-			includeContent: true,
-			hires: true,
-		}),
+		map: {
+			version: map.version,
+			file: map.file ?? filename,
+			sources: map.sources,
+			sourcesContent: map.sourcesContent?.filter((s): s is string => s !== null),
+			names: map.names,
+			mappings: map.mappings,
+		},
 	};
 }
 
@@ -312,7 +329,7 @@ export function persistPlugin(): Plugin {
 
 			return {
 				code: result.code,
-				map: result.map,
+				map: result.map as TransformResult["map"],
 			};
 		},
 	};
