@@ -2,26 +2,24 @@
 
 A Svelte reactive rune that keep its value through pages and reloads
 
-![GitHub Repo stars](https://img.shields.io/github/stars/macfja/svelte-persistent-store?style=social)
-![NPM bundle size](https://img.shields.io/bundlephobia/minzip/@macfja/svelte-persistent-store)
-![Download per week](https://img.shields.io/npm/dw/@macfja/svelte-persistent-store)
-![License](https://img.shields.io/npm/l/@macfja/svelte-persistent-store)
-![NPM version](https://img.shields.io/npm/v/@macfja/svelte-persistent-store)
+![GitHub Repo stars](https://img.shields.io/github/stars/andrescera/svelte-persistent-runes?style=social)
+![NPM bundle size](https://img.shields.io/bundlephobia/minzip/svelte-persistent-runes)
+![Download per week](https://img.shields.io/npm/dw/svelte-persistent-runes)
+![License](https://img.shields.io/npm/l/svelte-persistent-runes)
+![NPM version](https://img.shields.io/npm/v/svelte-persistent-runes)
 [![Checked with Biome](https://img.shields.io/badge/Checked_with-Biome-60a5fa?style=flat&logo=biome)](https://biomejs.dev)
-
-[ **[D E M O](https://www.sveltelab.dev/5aypljhy6qtirvp)** ]
 
 ## Installation
 
-With [NPM](https://www.npmjs.com/package/@macfja/svelte-persistent-runes)
+With [NPM](https://www.npmjs.com/package/svelte-persistent-runes)
 ```sh
-npm install --save-dev @macfja/svelte-persistent-runes
+npm install --save-dev svelte-persistent-runes
 # or
-yarn add --save-dev @macfja/svelte-persistent-runes
+yarn add --save-dev svelte-persistent-runes
 # or
-pnpm add --save-dev @macfja/svelte-persistent-runes
+pnpm add --save-dev svelte-persistent-runes
 # or
-deno install --dev npm:@macfja/svelte-persistent-runes
+deno install --dev npm:svelte-persistent-runes
 ```
 
 ## Quickstart
@@ -29,7 +27,7 @@ deno install --dev npm:@macfja/svelte-persistent-runes
 Update your `./svelte.config.js` to add a new preprocessor:
 ```diff
  import adapter from '@sveltejs/adapter-auto';
-+import persist from "@macfja/svelte-persistent-runes/preprocessor"
++import persist from "svelte-persistent-runes/preprocessor"
  const config = {
 + 	preprocess: [persist()],
 	kit: {
@@ -42,7 +40,7 @@ Update your `./svelte.config.js` to add a new preprocessor:
 Replace your `$state` with `$persist`:
 ```diff
  <script>
-+import "@macfja/svelte-persistent-runes"
++import "svelte-persistent-runes"
 -let count = $state(0);
 +let count = $persist(0, 'counter');
  </script>
@@ -55,7 +53,7 @@ This library have 2 parts:
 - A set of configuration to persist your data.
 
 You MUST add the preprocessor to use `$persist`.
-It's as simple as to add it in your Svelte configuration (`svelte.config.js`) with the import of `@macfja/svelte-persistent-runes/plugins`
+It's as simple as to add it in your Svelte configuration (`svelte.config.js`) with the import of `svelte-persistent-runes/plugins`
 
 <details>
 <summary>./svelte.config.js</summary>
@@ -63,7 +61,7 @@ It's as simple as to add it in your Svelte configuration (`svelte.config.js`) wi
 ```js
 import adapter from '@sveltejs/adapter-auto';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-import { persistPreprocessor } from "@macfja/svelte-persistent-runes/plugins"
+import { persistPreprocessor } from "svelte-persistent-runes/plugins"
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -85,7 +83,7 @@ export default config;
 > ```ts
 > import { sveltekit } from '@sveltejs/kit/vite';
 > import { defineConfig } from 'vite';
-> import { persistPlugin as persist } from "@macfja/svelte-persistent-runes/plugins";
+> import { persistPlugin as persist } from "svelte-persistent-runes/plugins";
 >
 > export default defineConfig({
 >   plugins: [persist(), sveltekit()]
@@ -101,7 +99,7 @@ Now that the preprocessor is added, you can use the `$persist` rune instead of t
 
 ```html
 <script>
-import "@macfja/svelte-persistent-runes"
+import "svelte-persistent-runes"
 let count = $persist(0, 'counter');
 </script>
 <div class="counter">
@@ -117,7 +115,7 @@ let count = $persist(0, 'counter');
 <summary>./src/anywhere/data.svelte.ts</summary>
 
 ```ts
-import "@macfja/svelte-persistent-runes"
+import "svelte-persistent-runes"
 export class Person {
     name = $persist('John', 'user-name')
     age = $persist(33, 'user-age')
@@ -136,7 +134,7 @@ export const currentUser = new Person()
 </details>
 
 > [!IMPORTANT]
-> You need to import `import "@macfja/svelte-persistent-runes"` to prevent Typescript to complain about the unknown function `$persist`
+> You need to import `import "svelte-persistent-runes"` to prevent Typescript to complain about the unknown function `$persist`
 >
 > ---
 >
@@ -187,7 +185,7 @@ You can customize how and where the state value is persisted.
 
 The `$persist` runes take a third (and optional) parameter of type `PersistentRunesOption`.
 
-The options consist of 2 main part: the serializer and the storage. It can be defined as a plain object or as the result of the `buildOptions` (impoerted from `@macfja/svelte-persistent-runes/options`)
+The options consist of 2 main part: the serializer and the storage. It can be defined as a plain object or as the result of the `buildOptions` (imported from `svelte-persistent-runes/options`)
 
 ```ts
 /**
@@ -256,12 +254,12 @@ The library have several built-in storage:
 
 ```html
 <script>
-import "@macfja/svelte-persistent-runes"
+import "svelte-persistent-runes"
 import {
     buildOptions,
     MacfjaSerializer,
     BrowserSessionStorage
-} "@macfja/svelte-persistent-runes/options"
+} from "svelte-persistent-runes/options"
 let count = $persist(0, 'counter', buildOptions(MacfjaSerializer, BrowserSessionStorage));
 </script>
 <div class="counter">
@@ -279,17 +277,17 @@ let count = $persist(0, 'counter', buildOptions(MacfjaSerializer, BrowserSession
 
 ```html
 <script>
-import "@macfja/svelte-persistent-runes"
+import "svelte-persistent-runes"
 import {
     buildOptions,
-    SuperJsnoSerializer,
+    SuperJsonSerializer,
     BrowserLocalStorage,
     addEncryptionStorage
-} "@macfja/svelte-persistent-runes/options"
+} from "svelte-persistent-runes/options"
 let count = $persist(0, 'counter', buildOptions(
-    SuperJsnoSerializer,
+    SuperJsonSerializer,
     addEncryptionStorage(BrowserLocalStorage, '12345678901234567890123456879012')
-);
+));
 </script>
 <div class="counter">
     <button onclick={() => (count -= 1)} aria-label="Decrease the counter by one">-</button>
