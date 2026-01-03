@@ -298,7 +298,7 @@ function transformContent(
 			file: map.file ?? filename,
 			sources: map.sources,
 			sourcesContent: map.sourcesContent?.filter(
-				(s): s is string => s !== null,
+				(s: string | null): s is string => s !== null,
 			),
 			names: map.names,
 			mappings: map.mappings,
