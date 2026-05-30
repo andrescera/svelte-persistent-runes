@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-05-30
+
+### Fixed
+
+- Vite plugin regex now matches `$persist<T>(...)` calls with TypeScript generic type arguments. Previously these calls were silently skipped by the transform, causing runtime breakage. (`src/plugins.ts`)
+
+### Known Limitations
+
+- Nested angle brackets in generic arguments are not yet supported. Example: `$persist<Map<string, number>>('key')` will NOT be matched because the regex's `[^()]*` negation does not handle nested `<>`. Workaround: use a type alias.
+
 ## [2.0.0]
 
 ### Changed

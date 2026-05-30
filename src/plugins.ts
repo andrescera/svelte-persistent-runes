@@ -12,7 +12,7 @@ type PersistMatch = {
 	isClassProperty: boolean;
 };
 
-const PERSIST_CALL_REGEX = /\$persist\s*\(/g;
+const PERSIST_CALL_REGEX = /\$persist\s*(?:<[^()]*>)?\s*\(/g;
 const IMPORT_STATEMENT =
 	'import * as __persist from "svelte-persistent-runes";\n';
 

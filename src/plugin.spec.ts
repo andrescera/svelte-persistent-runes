@@ -24,6 +24,27 @@ $effect(() => __persist.save('name', $state.snapshot(name), undefined));
 	t.truthy(actual?.map, "Should generate a sourcemap");
 });
 
+test("Transform variable with TypeScript generic", async (t: ExecutionContext) => {
+	const input = "let name = $persist<string>('John', 'name');";
+	const actual = await persistPreprocessor().script?.({
+		content: input,
+		filename: "test.js",
+		attributes: {},
+		markup: "",
+	});
+
+	t.is(
+		actual?.code,
+		`import * as __persist from "svelte-persistent-runes";
+let name = $state(__persist.load('name', undefined) ?? 'John');
+$effect.root(() => {
+$effect(() => __persist.save('name', $state.snapshot(name), undefined));
+});
+`,
+	);
+	t.truthy(actual?.map, "Should generate a sourcemap");
+});
+
 test("Transform variable with options", async (t: ExecutionContext) => {
 	const input =
 		"let name = $persist('John', 'name', {serialize: (v) => JSON.stringify(v)});";
