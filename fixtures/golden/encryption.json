@@ -1,0 +1,27 @@
+{
+	"key": "12345678901234567890123456879012",
+	"roundTripOk": true,
+	"cases": [
+		{
+			"plaintext": "42",
+			"record": "7f3a4236724d12f08f11d1cde0c9257e2f4b:737072"
+		},
+		{
+			"plaintext": "\"héllo\"",
+			"record": "69607b0e5e077aecbe03d1619b11cc107844b3a7d39374af:737072"
+		},
+		{
+			"plaintext": "{\"a\":[1,2]}",
+			"record": "302ad985083024e26675c3ea28e209fdbb9cf8675396c733dd08c5:737072"
+		},
+		{
+			"plaintext": "",
+			"record": "4c64b6838ad7ffb27c1e354585df205a:737072"
+		}
+	],
+	"customIv": {
+		"iv": "custom-iv",
+		"plaintext": "42",
+		"record": "831d470da0538850abfc2ab9d134cacff784:637573746f6d2d6976"
+	}
+}
