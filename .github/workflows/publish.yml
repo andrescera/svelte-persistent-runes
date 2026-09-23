@@ -15,37 +15,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "pnpm"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: pnpm install
+        run: bun install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
-
-      - name: Test
-        run: pnpm test
+        run: bun run lint
 
       - name: Build
-        run: pnpm build
+        run: bun run build
+
+      - name: Test
+        run: bun run test
 
       - name: Publish to npm
-        run: pnpm publish --access public --no-git-checks
+        run: bun pm pack && npm publish ./svelte-persistent-runes-*.tgz --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Create tarball
-        run: pnpm pack
 
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v2
