@@ -5,8 +5,8 @@
 // (e.g. `app.d.ts`) to have imported it first.
 //
 // NOTE: this file cannot actually *call* `$persist(...)` here - see
-// `Counter.svelte` and `.omo/evidence/task-7-typing-quality-tooling-overhaul-types.txt`
-// for the documented `global_reference_invalid` limitation.
+// `Counter.svelte` and the type-overload todo's recorded verification
+// evidence for the documented `global_reference_invalid` limitation.
 import "svelte-persistent-runes";
 
 let count = $state(0);

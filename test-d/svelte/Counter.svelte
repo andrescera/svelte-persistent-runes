@@ -7,8 +7,8 @@
 // field). This is orthogonal to the type system exercised exhaustively in
 // `test-d/persist.test-d.ts`; the transform added by a later todo rewrites
 // `$persist(...)` before Svelte's compiler ever sees it, which is why real
-// consumers never hit this. See the exact diagnostic text recorded in
-// `.omo/evidence/task-7-typing-quality-tooling-overhaul-types.txt`.
+// consumers never hit this. See the type-overload todo's recorded
+// verification evidence for the exact diagnostic text.
 let moduleCount = $state(0);
 </script>
 
