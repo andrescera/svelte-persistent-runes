@@ -49,7 +49,7 @@
 		"test:unit": "ava",
 		"test:runtime": "ava --config ava.runtime.config.mjs",
 		"test:watch": "ava --watch",
-		"test:types": "tsc -p test-d/tsconfig.json && tsc -p test-d/tsconfig.legacy.json && tsc -p test-d/tsconfig.legacy-v210.json && svelte-check --workspace test-d/svelte --tsconfig ./test-d/svelte/tsconfig.json --fail-on-warnings",
+		"test:types": "tsc -p test-d/tsconfig.json && tsc -p test-d/tsconfig.legacy.json && tsc -p test-d/tsconfig.legacy-v210.json && svelte-check --workspace test-d/svelte --tsconfig tsconfig.json --fail-on-warnings",
 		"lint:package": "publint run --level error && attw --pack . --profile esm-only",
 		"check:dist": "node scripts/check-dist.mjs"
 	},
