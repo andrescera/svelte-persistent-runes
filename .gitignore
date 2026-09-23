@@ -1,4 +1,4 @@
 /node_modules
-/.tsimp
+/.tmp
 /dist
 /*.tgz

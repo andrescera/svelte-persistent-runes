@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"noEmit": true,
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"skipLibCheck": true,
+		"lib": ["ES2022", "DOM"],
+		"types": [],
+		"paths": {
+			"svelte-persistent-runes": [
+				"../node_modules/svelte-persistent-runes-v210/dist/index.d.ts"
+			],
+			"svelte-persistent-runes/*": [
+				"../node_modules/svelte-persistent-runes-v210/dist/*.d.ts"
+			]
+		}
+	},
+	"files": ["./legacy-usage.ts"]
+}

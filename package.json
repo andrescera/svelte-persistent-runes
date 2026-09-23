@@ -43,8 +43,14 @@
 		"fix": "biome check --write .",
 		"lint": "biome check .",
 		"prepublishOnly": "bun run build",
-		"test": "ava",
-		"test:watch": "ava --watch"
+		"typecheck": "tsc --noEmit",
+		"test": "ava && ava --config ava.runtime.config.mjs",
+		"test:unit": "ava",
+		"test:runtime": "ava --config ava.runtime.config.mjs",
+		"test:watch": "ava --watch",
+		"test:types": "tsc -p test-d/tsconfig.json && tsc -p test-d/tsconfig.legacy.json && tsc -p test-d/tsconfig.legacy-v210.json && svelte-check --workspace test-d/svelte --tsconfig ./test-d/svelte/tsconfig.json --fail-on-warnings",
+		"lint:package": "publint run --level error && attw --pack . --profile esm-only",
+		"check:dist": "node scripts/check-dist.mjs"
 	},
 	"types": "dist/index.d.ts",
 	"dependencies": {
@@ -62,15 +68,21 @@
 		"superjson": "^2.2.6"
 	},
 	"peerDependencies": {
-		"svelte": "^5.0.0",
+		"svelte": "^5.57.1",
 		"vite": "^5 || ^6 || ^7"
 	},
 	"devDependencies": {
+		"@arethetypeswrong/cli": "^0.18.5",
 		"@biomejs/biome": "^2.5.14",
-		"ava": "^6.4.1",
+		"@sveltejs/vite-plugin-svelte": "^7.3.1",
+		"@types/node": "^24",
+		"ava": "^8.0.1",
 		"pkgroll": "^2.21.4",
+		"publint": "^0.3.24",
 		"rollup": "^4.54.0",
-		"tsimp": "^2.0.12",
+		"svelte-check": "^4.7.6",
+		"svelte-persistent-runes-v210": "npm:svelte-persistent-runes@2.1.0",
+		"tsx": "^4.23.15",
 		"typescript": "^5.9.3",
 		"vite": "^7.3.0"
 	},
@@ -86,13 +98,5 @@
 		"svelte",
 		"sveltejs",
 		"sveltekit"
-	],
-	"ava": {
-		"extensions": {
-			"ts": "module"
-		},
-		"nodeArguments": [
-			"--import=tsimp"
-		]
-	}
+	]
 }
