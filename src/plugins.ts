@@ -2,6 +2,16 @@ import type { PreprocessorGroup } from "svelte/compiler";
 import type { Plugin } from "vite";
 import { transformScript } from "./transform/transform";
 
+/**
+ * Create the Vite plugin that rewrites `$persist(...)` in `.svelte.ts`,
+ * `.svelte.js`, `.svelte.mts`, `.svelte.cts`, `.svelte.mjs` and `.svelte.cjs` modules.
+ *
+ * Svelte preprocessors only see `.svelte` files, so this plugin is required
+ * for `$persist` to work in standalone module files. Register it in the
+ * `plugins` array of `vite.config.ts`; `.svelte` components are left to
+ * {@link persistPreprocessor}.
+ * @returns A Vite plugin named `svelte-persistent-runes`
+ */
 export function persistPlugin(): Plugin {
 	return {
 		name: "svelte-persistent-runes",
@@ -20,6 +30,17 @@ export function persistPlugin(): Plugin {
 	};
 }
 
+/**
+ * Create the Svelte preprocessor that rewrites `$persist(...)` into a regular
+ * `$state` plus an effect that writes every change to storage.
+ *
+ * It handles the `<script>` and `<script module>` blocks of `.svelte` files,
+ * in JavaScript or TypeScript (`lang="ts"`); scripts in any other language
+ * are passed through unchanged. Register it in the `preprocess` array of
+ * `svelte.config.js`. Without it `$persist` does not exist. Module files
+ * (`.svelte.ts` / `.svelte.js`) need {@link persistPlugin} instead.
+ * @returns A Svelte preprocessor group named `svelte-persistent-runes`
+ */
 export function persistPreprocessor(): PreprocessorGroup {
 	return {
 		name: "svelte-persistent-runes",
