@@ -6,9 +6,14 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
@@ -32,3 +37,114 @@ jobs:
 
       - name: Test
         run: bun run test
+
+      - name: Check distribution
+        run: bun run check:dist
+
+      - name: Test types
+        run: bun run test:types
+
+      - name: Lint package
+        run: bun run lint:package
+
+  compat-vite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - vite: "^6"
+            vps: "^5"
+          - vite: "^7"
+            vps: "^6"
+          - vite: "^8"
+            vps: "^7"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install compatibility dependencies
+        run: bun add -d --no-save vite@${{ matrix.vite }} @sveltejs/vite-plugin-svelte@${{ matrix.vps }}
+
+      - name: Build
+        run: bun run build
+
+      - name: Test Vite integration
+        run: bunx ava src/vite.spec.ts
+
+  compat-svelte:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        svelte: ["5.0.0", "latest"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install compatibility dependency
+        run: bun add -d --no-save svelte@${{ matrix.svelte }}
+
+      - name: Test transforms and compilation
+        run: bunx ava src/transform.spec.ts src/compile.spec.ts
+
+      - name: Test runtime
+        run: bun run test:runtime
+
+  compat-typescript:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        typescript: ["5.0", "5.9", "latest"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Install compatibility dependency
+        run: bun add -d --no-save typescript@${{ matrix.typescript }}
+
+      - name: Test current type declarations
+        run: bunx tsc -p test-d/tsconfig.json
+
+      - name: Test legacy type declarations
+        run: bunx tsc -p test-d/tsconfig.legacy.json

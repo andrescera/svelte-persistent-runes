@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write
       id-token: write
 
     steps:
@@ -30,11 +30,23 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Typecheck
+        run: bun run typecheck
+
       - name: Build
         run: bun run build
 
+      - name: Check distribution
+        run: bun run check:dist
+
       - name: Test
         run: bun run test
+
+      - name: Test types
+        run: bun run test:types
+
+      - name: Lint package
+        run: bun run lint:package
 
       - name: Publish to npm
         run: bun pm pack && npm publish ./svelte-persistent-runes-*.tgz --provenance --access public
