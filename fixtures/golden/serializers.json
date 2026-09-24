@@ -1,0 +1,378 @@
+{
+	"JsonSerializer": {
+		"number": {
+			"record": "42"
+		},
+		"negative": {
+			"record": "-1.5"
+		},
+		"zero": {
+			"record": "0"
+		},
+		"emptyString": {
+			"record": "\"\""
+		},
+		"string": {
+			"record": "\"héllo \\\"quoted\\\" ✓\""
+		},
+		"true": {
+			"record": "true"
+		},
+		"false": {
+			"record": "false"
+		},
+		"null": {
+			"record": "null"
+		},
+		"array": {
+			"record": "[1,\"a\",null,[2]]"
+		},
+		"object": {
+			"record": "{\"a\":1,\"b\":{\"c\":\"d\"},\"e\":[true]}"
+		},
+		"date": {
+			"skipped": "round trip mismatch"
+		},
+		"map": {
+			"skipped": "round trip mismatch"
+		},
+		"set": {
+			"skipped": "round trip mismatch"
+		},
+		"bigint": {
+			"skipped": "Do not know how to serialize a BigInt"
+		},
+		"undefinedProp": {
+			"skipped": "round trip mismatch"
+		}
+	},
+	"DevalueSerializer": {
+		"number": {
+			"record": "[42]"
+		},
+		"negative": {
+			"record": "[-1.5]"
+		},
+		"zero": {
+			"record": "[0]"
+		},
+		"emptyString": {
+			"record": "[\"\"]"
+		},
+		"string": {
+			"record": "[\"héllo \\\"quoted\\\" ✓\"]"
+		},
+		"true": {
+			"record": "[true]"
+		},
+		"false": {
+			"record": "[false]"
+		},
+		"null": {
+			"record": "[null]"
+		},
+		"array": {
+			"record": "[[1,2,3,4],1,\"a\",null,[5],2]"
+		},
+		"object": {
+			"record": "[{\"a\":1,\"b\":2,\"e\":4},1,{\"c\":3},\"d\",[5],true]"
+		},
+		"date": {
+			"record": "[[\"Date\",\"2020-01-02T03:04:05.000Z\"]]"
+		},
+		"map": {
+			"record": "[[\"Map\",1,2],\"a\",1]"
+		},
+		"set": {
+			"record": "[[\"Set\",1,2],1,2]"
+		},
+		"bigint": {
+			"record": "[[\"BigInt\",\"10\"]]"
+		},
+		"undefinedProp": {
+			"record": "[{\"a\":-1}]"
+		}
+	},
+	"ESSerializerSerializer": {
+		"number": {
+			"record": "42"
+		},
+		"negative": {
+			"record": "-1.5"
+		},
+		"zero": {
+			"record": "0"
+		},
+		"emptyString": {
+			"record": "\"\""
+		},
+		"string": {
+			"record": "\"héllo \\\"quoted\\\" ✓\""
+		},
+		"true": {
+			"record": "true"
+		},
+		"false": {
+			"record": "false"
+		},
+		"null": {
+			"record": "null"
+		},
+		"array": {
+			"record": "[1,\"a\",null,[2]]"
+		},
+		"object": {
+			"record": "{\"a\":1,\"b\":{\"c\":\"d\"},\"e\":[true]}"
+		},
+		"date": {
+			"record": "{\"ess_cn\":\"Date\",\"ess_ts\":1577934245000}"
+		},
+		"map": {
+			"skipped": "Class Map not found"
+		},
+		"set": {
+			"record": "{\"ess_cn\":\"Set\",\"ess_arr\":[1,2]}"
+		},
+		"bigint": {
+			"record": "{\"ess_cn\":\"BI\",\"ess_str\":\"10\"}"
+		},
+		"undefinedProp": {
+			"record": "{\"a\":{\"ess_cn\":\"UD\"}}"
+		}
+	},
+	"MacfjaSerializer": {
+		"number": {
+			"record": "42"
+		},
+		"negative": {
+			"record": "-1.5"
+		},
+		"zero": {
+			"record": "0"
+		},
+		"emptyString": {
+			"record": "\"\""
+		},
+		"string": {
+			"record": "\"héllo \\\"quoted\\\" ✓\""
+		},
+		"true": {
+			"record": "true"
+		},
+		"false": {
+			"record": "false"
+		},
+		"null": {
+			"record": "null"
+		},
+		"array": {
+			"record": "[\"#$@__reference__0\",1,\"a\",null,[\"#$@__reference__1\",2]]"
+		},
+		"object": {
+			"record": "{\"a\":1,\"b\":{\"c\":\"d\",\"#$@__reference__\":1},\"e\":[\"#$@__reference__2\",true],\"#$@__reference__\":0}"
+		},
+		"date": {
+			"record": "{\"time\":1577934245000,\"#$@__constructor__\":\"Date\",\"#$@__reference__\":0}"
+		},
+		"map": {
+			"record": "{\"data\":[[\"#$@__reference__1\",\"a\",1]],\"#$@__constructor__\":\"Map\",\"#$@__reference__\":0}"
+		},
+		"set": {
+			"record": "{\"data\":[1,2],\"#$@__constructor__\":\"Set\",\"#$@__reference__\":0}"
+		},
+		"bigint": {
+			"record": "{\"number\":\"10\",\"#$@__constructor__\":\"BigInt\",\"#$@__reference__\":0}"
+		},
+		"undefinedProp": {
+			"skipped": "round trip mismatch"
+		}
+	},
+	"NextJsonSerializer": {
+		"number": {
+			"record": "42"
+		},
+		"negative": {
+			"record": "-1.5"
+		},
+		"zero": {
+			"record": "0"
+		},
+		"emptyString": {
+			"record": "\"\""
+		},
+		"string": {
+			"record": "\"héllo \\\"quoted\\\" ✓\""
+		},
+		"true": {
+			"record": "true"
+		},
+		"false": {
+			"record": "false"
+		},
+		"null": {
+			"record": "null"
+		},
+		"array": {
+			"record": "[1,\"a\",null,[2]]"
+		},
+		"object": {
+			"record": "{\"a\":1,\"b\":{\"c\":\"d\"},\"e\":[true]}"
+		},
+		"date": {
+			"record": "new Date(1577934245000)"
+		},
+		"map": {
+			"record": "new Map([[\"a\",1]])"
+		},
+		"set": {
+			"record": "new Set([1,2])"
+		},
+		"bigint": {
+			"record": "10n"
+		},
+		"undefinedProp": {
+			"record": "{\"a\":undefined}"
+		}
+	},
+	"PhpSerializeSerializer": {
+		"number": {
+			"record": "i:42;"
+		},
+		"negative": {
+			"record": "d:-1.5;"
+		},
+		"zero": {
+			"record": "i:0;"
+		},
+		"emptyString": {
+			"record": "s:0:\"\";"
+		},
+		"string": {
+			"record": "s:19:\"héllo \"quoted\" ✓\";"
+		},
+		"true": {
+			"record": "b:1;"
+		},
+		"false": {
+			"record": "b:0;"
+		},
+		"null": {
+			"record": "N;"
+		},
+		"array": {
+			"record": "a:4:{i:0;i:1;i:1;s:1:\"a\";i:2;N;i:3;a:1:{i:0;i:2;}}"
+		},
+		"object": {
+			"record": "a:3:{s:1:\"a\";i:1;s:1:\"b\";a:1:{s:1:\"c\";s:1:\"d\";}s:1:\"e\";a:1:{i:0;b:1;}}"
+		},
+		"date": {
+			"skipped": "Class Date not found in given scope"
+		},
+		"map": {
+			"skipped": "round trip mismatch"
+		},
+		"set": {
+			"skipped": "Class Set not found in given scope"
+		},
+		"bigint": {
+			"skipped": "round trip mismatch"
+		},
+		"undefinedProp": {
+			"skipped": "Unexpected type 'undefined' encountered while attempting to serialize"
+		}
+	},
+	"SerializeAnythingSerializer": {
+		"number": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":42}"
+		},
+		"negative": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":-1.5}"
+		},
+		"zero": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":0}"
+		},
+		"emptyString": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":\"\"}"
+		},
+		"string": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":\"héllo \\\"quoted\\\" ✓\"}"
+		},
+		"true": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":true}"
+		},
+		"false": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":false}"
+		},
+		"null": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":null}"
+		},
+		"array": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":[1,\"a\",null,[2]]}"
+		},
+		"object": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":{\"a\":1,\"b\":{\"c\":\"d\",\"_SAId\":2},\"e\":[true],\"_SAId\":1}}"
+		},
+		"date": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":{\"_SAType\":\"Date\",\"_SAtimestamp\":1577934245000}}"
+		},
+		"map": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":{\"_SAType\":\"Map\",\"_SAkvPairs\":[[\"a\",1]]}}"
+		},
+		"set": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":{\"_SAType\":\"Set\",\"_SAvalues\":[1,2]}}"
+		},
+		"bigint": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":{\"_SAType\":\"BigInt\",\"_SAnum\":\"10\"}}"
+		},
+		"undefinedProp": {
+			"record": "{\"_Serialize_Any_Encoded\":true,\"_SA_Content\":{\"a\":{\"_SAType\":\"undef\"},\"_SAId\":1}}"
+		}
+	},
+	"SuperJsonSerializer": {
+		"number": {
+			"record": "{\"json\":42}"
+		},
+		"negative": {
+			"record": "{\"json\":-1.5}"
+		},
+		"zero": {
+			"record": "{\"json\":0}"
+		},
+		"emptyString": {
+			"record": "{\"json\":\"\"}"
+		},
+		"string": {
+			"record": "{\"json\":\"héllo \\\"quoted\\\" ✓\"}"
+		},
+		"true": {
+			"record": "{\"json\":true}"
+		},
+		"false": {
+			"record": "{\"json\":false}"
+		},
+		"null": {
+			"record": "{\"json\":null}"
+		},
+		"array": {
+			"record": "{\"json\":[1,\"a\",null,[2]]}"
+		},
+		"object": {
+			"record": "{\"json\":{\"a\":1,\"b\":{\"c\":\"d\"},\"e\":[true]}}"
+		},
+		"date": {
+			"record": "{\"json\":\"2020-01-02T03:04:05.000Z\",\"meta\":{\"values\":[\"Date\"],\"v\":1}}"
+		},
+		"map": {
+			"record": "{\"json\":[[\"a\",1]],\"meta\":{\"values\":[\"map\"],\"v\":1}}"
+		},
+		"set": {
+			"record": "{\"json\":[1,2],\"meta\":{\"values\":[\"set\"],\"v\":1}}"
+		},
+		"bigint": {
+			"record": "{\"json\":\"10\",\"meta\":{\"values\":[\"bigint\"],\"v\":1}}"
+		},
+		"undefinedProp": {
+			"record": "{\"json\":{\"a\":null},\"meta\":{\"values\":{\"a\":[\"undefined\"]},\"v\":1}}"
+		}
+	}
+}

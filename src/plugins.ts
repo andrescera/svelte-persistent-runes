@@ -1,384 +1,64 @@
-import MagicString from "magic-string";
-import type { PreprocessorGroup, Processed } from "svelte/compiler";
+import type { PreprocessorGroup } from "svelte/compiler";
 import type { Plugin } from "vite";
-
-type PersistMatch = {
-	start: number;
-	end: number;
-	varName: string;
-	initial: string;
-	key: string;
-	options: string;
-	isClassProperty: boolean;
-};
-
-const PERSIST_CALL_REGEX = /\$persist\s*(?:<[^()]*>)?\s*\(/g;
-const IMPORT_STATEMENT =
-	'import * as __persist from "svelte-persistent-runes";\n';
+import { transformScript } from "./transform/transform";
 
 /**
- * Find the matching closing parenthesis for a $persist call
+ * Create the Vite plugin that rewrites `$persist(...)` in `.svelte.ts`,
+ * `.svelte.js`, `.svelte.mts`, `.svelte.cts`, `.svelte.mjs` and `.svelte.cjs` modules.
+ *
+ * Svelte preprocessors only see `.svelte` files, so this plugin is required
+ * for `$persist` to work in standalone module files. Register it in the
+ * `plugins` array of `vite.config.ts`; `.svelte` components are left to
+ * {@link persistPreprocessor}.
+ * @returns A Vite plugin named `svelte-persistent-runes`
  */
-function findMatchingParen(content: string, start: number): number {
-	let depth = 1;
-	let i = start;
-	let inString: string | null = null;
-	let escaped = false;
-
-	while (i < content.length && depth > 0) {
-		const char = content[i];
-
-		if (escaped) {
-			escaped = false;
-			i++;
-			continue;
-		}
-
-		if (char === "\\") {
-			escaped = true;
-			i++;
-			continue;
-		}
-
-		if (inString) {
-			if (char === inString) {
-				inString = null;
-			}
-		} else {
-			if (char === '"' || char === "'" || char === "`") {
-				inString = char;
-			} else if (char === "(") {
-				depth++;
-			} else if (char === ")") {
-				depth--;
-			}
-		}
-		i++;
-	}
-
-	return i;
-}
-
-/**
- * Split arguments respecting nested structures
- */
-function splitArguments(argsStr: string): string[] {
-	const args: string[] = [];
-	let current = "";
-	let depth = 0;
-	let inString: string | null = null;
-	let escaped = false;
-
-	for (let i = 0; i < argsStr.length; i++) {
-		const char = argsStr[i];
-
-		if (escaped) {
-			escaped = false;
-			current += char;
-			continue;
-		}
-
-		if (char === "\\") {
-			escaped = true;
-			current += char;
-			continue;
-		}
-
-		if (inString) {
-			current += char;
-			if (char === inString) {
-				inString = null;
-			}
-		} else {
-			if (char === '"' || char === "'" || char === "`") {
-				inString = char;
-				current += char;
-			} else if (char === "(" || char === "[" || char === "{") {
-				depth++;
-				current += char;
-			} else if (char === ")" || char === "]" || char === "}") {
-				depth--;
-				current += char;
-			} else if (char === "," && depth === 0) {
-				args.push(current.trim());
-				current = "";
-			} else {
-				current += char;
-			}
-		}
-	}
-
-	if (current.trim()) {
-		args.push(current.trim());
-	}
-
-	return args;
-}
-
-/**
- * Check if a position is inside a comment
- */
-function isInsideComment(content: string, position: number): boolean {
-	// Find the start of the current line
-	const lineStart = content.lastIndexOf("\n", position - 1) + 1;
-	const beforeOnLine = content.slice(lineStart, position);
-
-	// Check for single-line comment
-	if (beforeOnLine.includes("//")) {
-		return true;
-	}
-
-	// Check for block comment - find last /* and */ before position
-	const beforePos = content.slice(0, position);
-	const lastBlockStart = beforePos.lastIndexOf("/*");
-	const lastBlockEnd = beforePos.lastIndexOf("*/");
-
-	// If /* is after */ (or no */), we're inside a block comment
-	if (lastBlockStart !== -1 && lastBlockStart > lastBlockEnd) {
-		return true;
-	}
-
-	return false;
-}
-
-/**
- * Find the variable name for a $persist call (works for both let/const and class properties)
- */
-function findVarName(
-	content: string,
-	persistStart: number,
-): { varName: string; isClassProperty: boolean } | null {
-	// Skip if inside a comment
-	if (isInsideComment(content, persistStart)) {
-		return null;
-	}
-
-	// Look backwards from $persist to find the assignment
-	const before = content.slice(0, persistStart);
-
-	// Match: varName = (potentially with let/const/var before it)
-	const assignMatch = before.match(/(?:(?:let|const|var)\s+)?(\w+)\s*=\s*$/);
-	if (assignMatch) {
-		// Check if this is a class property by looking for class context
-		const classMatch = before.match(/class\s+\w+[^{]*\{[^}]*$/);
-		return {
-			varName: assignMatch[1],
-			isClassProperty: !!classMatch,
-		};
-	}
-
-	return null;
-}
-
-/**
- * Find all $persist calls in the content
- */
-function findPersistCalls(content: string): PersistMatch[] {
-	const matches: PersistMatch[] = [];
-	PERSIST_CALL_REGEX.lastIndex = 0;
-
-	let match = PERSIST_CALL_REGEX.exec(content);
-	while (match !== null) {
-		const callStart = match.index;
-		const argsStart = callStart + match[0].length;
-		const argsEnd = findMatchingParen(content, argsStart);
-		const argsStr = content.slice(argsStart, argsEnd - 1);
-		const args = splitArguments(argsStr);
-
-		if (args.length >= 2) {
-			const varInfo = findVarName(content, callStart);
-			if (varInfo) {
-				matches.push({
-					start: callStart,
-					end: argsEnd,
-					varName: varInfo.varName,
-					initial: args[0],
-					key: args[1],
-					options: args[2] || "undefined",
-					isClassProperty: varInfo.isClassProperty,
-				});
-			}
-		}
-
-		match = PERSIST_CALL_REGEX.exec(content);
-	}
-
-	return matches;
-}
-
-type TransformResult = {
-	code: string;
-	map: {
-		version: number;
-		file: string;
-		sources: string[];
-		sourcesContent?: string[];
-		names: string[];
-		mappings: string;
-	};
-};
-
-/**
- * Transform the content by replacing $persist calls
- */
-function transformContent(
-	content: string,
-	filename: string,
-): TransformResult | null {
-	if (!content.includes("$persist")) {
-		return null;
-	}
-
-	const matches = findPersistCalls(content);
-	if (matches.length === 0) {
-		return null;
-	}
-
-	const s = new MagicString(content);
-
-	// Add import at the beginning
-	s.prepend(IMPORT_STATEMENT);
-
-	// Group matches by class vs non-class
-	const classMatches: Map<string, PersistMatch[]> = new Map();
-	const varMatches: PersistMatch[] = [];
-
-	for (const match of matches) {
-		if (match.isClassProperty) {
-			// Try to find which class this belongs to
-			const beforeMatch = content.slice(0, match.start);
-			const classNameMatch = beforeMatch.match(/class\s+(\w+)[^{]*\{[^}]*$/);
-			if (classNameMatch) {
-				const className = classNameMatch[1];
-				const existing = classMatches.get(className) ?? [];
-				existing.push(match);
-				classMatches.set(className, existing);
-			}
-		} else {
-			varMatches.push(match);
-		}
-
-		// Replace $persist(...) with $state(__persist.load(...) ?? initial)
-		const replacement = `$state(__persist.load(${match.key}, ${match.options}) ?? ${match.initial})`;
-		s.overwrite(match.start, match.end, replacement);
-	}
-
-	// Add effects for variable declarations
-	if (varMatches.length > 0) {
-		const effects = varMatches
-			.map(
-				(m) =>
-					`$effect(() => __persist.save(${m.key}, $state.snapshot(${m.varName}), ${m.options}));`,
-			)
-			.join("\n");
-		s.append(`\n$effect.root(() => {\n${effects}\n});\n`);
-	}
-
-	// For class properties, we need to find constructors and add effects there
-	for (const [className, classProps] of classMatches) {
-		// Find the class and its constructor
-		const classRegex = new RegExp(
-			`class\\s+${className}(?:\\s+extends\\s+\\w+)?\\s*\\{`,
-		);
-		const classMatch = classRegex.exec(content);
-
-		if (classMatch) {
-			const classStart = classMatch.index + classMatch[0].length;
-			const constructorMatch = content
-				.slice(classStart)
-				.match(/constructor\s*\([^)]*\)\s*\{/);
-
-			const effects = classProps
-				.map(
-					(m) =>
-						`$effect(() => __persist.save(${m.key}, $state.snapshot(this.${m.varName}), ${m.options}));`,
-				)
-				.join("\n");
-			const effectBlock = `$effect.root(() => {\n${effects}\n});`;
-
-			if (constructorMatch && constructorMatch.index !== undefined) {
-				// Add to existing constructor
-				const constructorBodyStart =
-					classStart + constructorMatch.index + constructorMatch[0].length;
-				s.appendLeft(constructorBodyStart, `\n${effectBlock}\n`);
-			} else {
-				// Need to add a constructor
-				// Check if class extends something
-				const extendsMatch = content
-					.slice(classMatch.index)
-					.match(/class\s+\w+\s+extends\s+(\w+)/);
-				const superCall = extendsMatch ? "super(...args);\n" : "";
-				const constructorParams = extendsMatch ? "...args: any[]" : "";
-				const newConstructor = `\nconstructor(${constructorParams}) {\n${superCall}${effectBlock}\n}\n`;
-				s.appendLeft(classStart, newConstructor);
-			}
-		}
-	}
-
-	const map = s.generateMap({
-		source: filename,
-		file: filename,
-		includeContent: true,
-		hires: true,
-	});
-
-	return {
-		code: s.toString(),
-		map: {
-			version: map.version,
-			file: map.file ?? filename,
-			sources: map.sources,
-			sourcesContent: map.sourcesContent?.filter(
-				(s: string | null): s is string => s !== null,
-			),
-			names: map.names,
-			mappings: map.mappings,
-		},
-	};
-}
-
 export function persistPlugin(): Plugin {
-	const preprocess = persistPreprocessor();
 	return {
 		name: "svelte-persistent-runes",
-		transform(src: string, id: string) {
-			if (!/\.svelte\.(c|m)?[jt]s$/.test(id)) {
-				return null;
-			}
-
-			const result = preprocess.script?.({
-				content: src,
-				filename: id,
-				attributes: {},
-				markup: "",
-			}) as Processed | undefined;
-
-			if (!result || result.code === src) {
-				return null;
-			}
-
-			return {
-				code: result.code,
-				map: result.map as TransformResult["map"],
-			};
+		// biome-ignore lint/complexity/useArrowFunction: Keep the Vite hook as a plain function-valued property.
+		transform: function (src: string, id: string) {
+			const file = id.split("?")[0];
+			if (!/\.svelte\.[cm]?[jt]s$/.test(file)) return null;
+			const typescript = /\.[cm]?ts$/.test(file);
+			return transformScript(src, {
+				filename: file,
+				typescript,
+				module: true,
+				afterTranspilation: typescript,
+			});
 		},
 	};
 }
 
+/**
+ * Create the Svelte preprocessor that rewrites `$persist(...)` into a regular
+ * `$state` plus an effect that writes every change to storage.
+ *
+ * It handles the `<script>` and `<script module>` blocks of `.svelte` files,
+ * in JavaScript or TypeScript (`lang="ts"`); scripts in any other language
+ * are passed through unchanged. Register it in the `preprocess` array of
+ * `svelte.config.js`. Without it `$persist` does not exist. Module files
+ * (`.svelte.ts` / `.svelte.js`) need {@link persistPlugin} instead.
+ * @returns A Svelte preprocessor group named `svelte-persistent-runes`
+ */
 export function persistPreprocessor(): PreprocessorGroup {
 	return {
 		name: "svelte-persistent-runes",
-		script({ content, filename = "unknown.js" }) {
-			const result = transformContent(content, filename);
-
-			if (!result) {
+		script({ content, filename = "unknown.js", attributes, markup }) {
+			const lang = attributes.lang;
+			if (
+				lang &&
+				!["ts", "typescript", "js", "javascript"].includes(String(lang))
+			) {
 				return { code: content };
 			}
-
-			return {
-				code: result.code,
-				map: result.map,
-			};
+			const result = transformScript(content, {
+				filename,
+				typescript: lang === "ts" || lang === "typescript",
+				module: attributes.module === true || attributes.context === "module",
+				markup,
+			});
+			return result ?? { code: content };
 		},
 	};
 }
