@@ -48,10 +48,11 @@ jobs:
       - name: Lint package
         run: bun run lint:package
 
+      - name: Ensure npm supports OIDC trusted publishing
+        run: npm install -g npm@latest
+
       - name: Publish to npm
         run: bun pm pack && npm publish ./svelte-persistent-runes-*.tgz --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v2
