@@ -41,6 +41,31 @@ function position(
 	return { line: before.split("\n").length, column: offset - lastNewline };
 }
 
+function isModuleScriptTag(tag: string): boolean {
+	return /\smodule(?=[\s>=/])|\scontext\s*=\s*["']?module["']?/.test(tag);
+}
+
+/**
+ * Locate `content` inside `markup`. Svelte's preprocessor API gives no offset,
+ * so the body is searched for. When a component's module and instance scripts
+ * are byte-identical, the occurrence whose opening `<script>` tag matches
+ * `options.module` wins; otherwise the first occurrence is used.
+ */
+function contentStart(content: string, options: TransformOptions): number {
+	const markup = options.markup;
+	if (markup === undefined) return -1;
+	const first = markup.indexOf(content);
+	if (first < 0) return first;
+	for (let at = first; at >= 0; at = markup.indexOf(content, at + 1)) {
+		const tagStart = markup.lastIndexOf("<script", at);
+		if (tagStart < 0) continue;
+		const tag = markup.slice(tagStart, at);
+		if (tag.includes("</script")) continue;
+		if (isModuleScriptTag(tag) === options.module) return at;
+	}
+	return first;
+}
+
 function errorAt(
 	content: string,
 	options: TransformOptions,
@@ -48,18 +73,19 @@ function errorAt(
 	message: string,
 ): Error {
 	const location = position(content, index);
-	const start = options.markup?.indexOf(content) ?? -1;
-	const line =
-		start >= 0
-			? location.line + position(options.markup ?? "", start).line - 1
-			: location.line;
+	const start = contentStart(content, options);
+	const origin =
+		start >= 0 ? position(options.markup ?? "", start) : { line: 1, column: 1 };
+	const line = location.line + origin.line - 1;
+	const column =
+		location.line === 1 ? location.column + origin.column - 1 : location.column;
 	const qualifier =
 		options.markup === undefined || start >= 0 ? "" : " (in <script>)";
 	const suffix = options.afterTranspilation
 		? " (after TypeScript transpilation)"
 		: "";
 	return new Error(
-		`[svelte-persistent-runes] ${options.filename}:${line}:${location.column}${qualifier} ${message}${suffix}`,
+		`[svelte-persistent-runes] ${options.filename}:${line}:${column}${qualifier} ${message}${suffix}`,
 	);
 }
 

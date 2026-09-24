@@ -505,6 +505,69 @@ test("offsets preprocessor error into original markup", async (t: ExecutionConte
 	);
 });
 
+test("offsets column when <script> and code share a line", (t: ExecutionContext) => {
+	const content = 'let { x } = $persist({ x: 1 }, "k");';
+	const markup = `<script>${content}</script>`;
+	const error = t.throws(() =>
+		transformScript(content, {
+			filename: "C.svelte",
+			typescript: false,
+			module: false,
+			markup,
+		}),
+	);
+	t.is(
+		error?.message,
+		"[svelte-persistent-runes] C.svelte:1:21 $persist cannot initialize a destructuring pattern",
+	);
+});
+
+test("offsets line and column for a tag preceded by markup on the same line", (t: ExecutionContext) => {
+	const content = 'let x = $state(0);\nlet { y } = $persist({ y: 1 }, "k");';
+	const markup = `<p>a</p>\n<p>b</p><script lang="ts">${content}</script>`;
+	const error = t.throws(() =>
+		transformScript(content, {
+			filename: "C.svelte",
+			typescript: true,
+			module: false,
+			markup,
+		}),
+	);
+	t.is(
+		error?.message,
+		"[svelte-persistent-runes] C.svelte:3:13 $persist cannot initialize a destructuring pattern",
+	);
+});
+
+test("locates the error in the matching script when module and instance bodies are identical", (t: ExecutionContext) => {
+	const content = '\nlet { z } = $persist({ z: 1 }, "k");\n';
+	const markup = `<script module>${content}</script>\n<p>x</p>\n<script>${content}</script>`;
+	const inModule = t.throws(() =>
+		transformScript(content, {
+			filename: "C.svelte",
+			typescript: false,
+			module: true,
+			markup,
+		}),
+	);
+	t.is(
+		inModule?.message,
+		"[svelte-persistent-runes] C.svelte:2:13 $persist cannot initialize a destructuring pattern",
+	);
+	const inInstance = t.throws(() =>
+		transformScript(content, {
+			filename: "C.svelte",
+			typescript: false,
+			module: false,
+			markup,
+		}),
+	);
+	t.is(
+		inInstance?.message,
+		"[svelte-persistent-runes] C.svelte:6:13 $persist cannot initialize a destructuring pattern",
+	);
+});
+
 test("leaves no-call content byte identical and map absent", async (t: ExecutionContext) => {
 	const content = 'const s = "$persist";\nlet n = $state(1);';
 	const result = await persistPreprocessor().script?.({
