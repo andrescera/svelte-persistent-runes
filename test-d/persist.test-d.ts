@@ -75,25 +75,19 @@ const numWithDateOpts = $persist(0, "k-num-with-date-opts", dateOpts);
 // --- Genuine type errors -----------------------------------------------------
 
 // @ts-expect-error - `deserialize` must return `number` for a number-typed `$persist`, not `string`
-const badDeserialize = $persist(0, "k-bad-deserialize", {
-	deserialize: (s: string) => s,
-});
+$persist(0, "k", { deserialize: (s: string) => s });
 
 // @ts-expect-error - the storage key must be a `string`, not a `number`
 const badKey = $persist(0, 123);
 
 // @ts-expect-error - `serialize` must accept `Date` for a Date-typed `$persist`, not `number`
-const badSerialize = $persist(new Date(), "k-bad-serialize", {
-	serialize: (v: number) => "",
-});
+$persist(new Date(), "k", { serialize: (v: number) => "" });
 
 // @ts-expect-error - the tuple literal has an extra element not assignable to `[string, number]`
 const badTuple = $persist<[string, number]>(["a", 1, true], "k-bad-tuple");
 
 // @ts-expect-error - `storageRead` must return `string | undefined`, not `number`
-const badStorageRead = $persist(0, "k-bad-storage-read", {
-	storageRead: () => 123,
-});
+$persist(0, "k", { storageRead: () => 123 });
 
 // --- Storage spreads and `onError` -------------------------------------------
 
