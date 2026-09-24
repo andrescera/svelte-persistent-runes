@@ -176,7 +176,7 @@ export function transformScript(
 					if (
 						parent?.type !== "MemberExpression" ||
 						child(parent, "property") !== node ||
-						parent["computed"] === true
+						parent.computed === true
 					) {
 						throw errorAt(
 							content,
@@ -196,7 +196,7 @@ export function transformScript(
 				return;
 			}
 
-			const args = node["arguments"];
+			const args = node.arguments;
 			if (
 				!Array.isArray(args) ||
 				(args.length !== 2 && args.length !== 3) ||
@@ -264,7 +264,7 @@ export function transformScript(
 					exported &&
 					!options.module &&
 					options.markup !== undefined &&
-					declaration["kind"] !== "const"
+					declaration.kind !== "const"
 				)
 					throw errorAt(
 						content,
@@ -288,14 +288,14 @@ export function transformScript(
 				child(consumer, "value") === outer &&
 				classBody
 			) {
-				if (consumer["static"] === true)
+				if (consumer.static === true)
 					throw errorAt(
 						content,
 						options,
 						node.start,
 						"$persist cannot be used on static class fields",
 					);
-				if (consumer["computed"] === true)
+				if (consumer.computed === true)
 					throw errorAt(
 						content,
 						options,
@@ -319,7 +319,7 @@ export function transformScript(
 				);
 			} else if (
 				consumer?.type === "AssignmentExpression" &&
-				consumer["operator"] === "=" &&
+				consumer.operator === "=" &&
 				child(consumer, "right") === outer
 			) {
 				const left = child(consumer, "left");
@@ -330,14 +330,14 @@ export function transformScript(
 				if (
 					left?.type !== "MemberExpression" ||
 					child(left, "object")?.type !== "ThisExpression" ||
-					left["computed"] === true ||
+					left.computed === true ||
 					(property?.type !== "Identifier" &&
 						property?.type !== "PrivateIdentifier") ||
 					statement?.type !== "ExpressionStatement" ||
 					body?.type !== "BlockStatement" ||
 					path[index - 3]?.type !== "FunctionExpression" ||
 					method?.type !== "MethodDefinition" ||
-					method["kind"] !== "constructor" ||
+					method.kind !== "constructor" ||
 					child(method, "value") !== path[index - 3]
 				)
 					throw errorAt(content, options, node.start, placementError);

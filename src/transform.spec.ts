@@ -218,6 +218,7 @@ const happyCases: readonly HappyCase[] = [
 	},
 	{
 		name: "template key nested parentheses",
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: literal source-code fixture fed to the transform; not a template literal in this test file
 		source: 'let x = $persist(0, `key-${fn("a)")}`);',
 		binding: "x",
 	},
@@ -348,7 +349,7 @@ for (const entry of happyCases) {
 		let remaining = 0;
 		walk(parsed, null, {
 			Identifier(node, { next }) {
-				if (node["name"] === "$persist") remaining++;
+				if (node.name === "$persist") remaining++;
 				next();
 			},
 		});

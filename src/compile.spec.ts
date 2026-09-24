@@ -171,6 +171,7 @@ const cases: readonly CompileCase[] = [
 	},
 	{
 		name: "template key nested parentheses",
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: literal source-code fixture fed to the transform; not a template literal in this test file
 		source: 'let x = $persist(0, `key-${fn("a)")}`);',
 	},
 	{
